@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [ "main" ] # 当推送到 main 分支时触发
+    branches: [ "main" ]
 
 permissions:
   contents: read
@@ -16,14 +16,36 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         
-      # 1. 新增：安装 pnpm
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 10.5.2 # 建议指定与你本地一致的 pnpm 版本
+          version: 10.5.2
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 24.14.0
-          # 2. 修改：将缓存改
+          node-version: 20  # 修改为稳定的 Node 20 版本
+          cache: 'pnpm'
+
+      # Vite 项目标准构建流程
+      - name: Install dependencies
+        run: pnpm install
+        
+      - name: Build
+        run: pnpm build  # 执行你的 Vite 打包命令
+        
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist  # Vite 默认打包生成的目录就是 dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
